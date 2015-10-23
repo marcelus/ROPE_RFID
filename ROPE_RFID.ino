@@ -3,6 +3,7 @@
 #include <TMRpcm.h>
 
 #define SD_ChipSelectPin 4  //using digital pin 4 on arduino nano 328 
+
 TMRpcm tmrpcm;   // create an object for use in this sketch
 
 // ---------------Som Beeps----------------
@@ -132,8 +133,61 @@ void fazendeiro(){
   }
 }
 
-void furaPneu(){
-  //TO DO
+void furaPneu(byte cel[4]){
+  if (comapraCelula(cel,celula[4][1]) {
+    if (comparaCelula(oldCard,celula[5][1]) {
+      limpaVetor();
+      tmrpcm.play("pneu.wav");
+    }
+  } else if (comapraCelula(cel,celula[5][1]) {
+    if (comparaCelula(oldCard,celula[4][1]) {
+      limpaVetor();
+      tmrpcm.play("pneu.wav");
+    }
+  }
+}
+
+// Identifica a posição atual e executa ação correspondente
+void executaInteracao() {
+  
+  if (contCelula[0][0] == 4)
+    fazendeiro();
+  
+  if (contCelula[1][0] == 4)
+    caiAgua();
+  
+  if (contCelula[1][2] == 4)
+    caiAgua();
+  
+  if (contCelula[1][3] == 4)
+    ponteFraca();
+  
+  if (contCelula[2][0] == 4)
+    bateArvore();
+  
+  if (contCelula[2][2] == 4)
+    bateArvore();
+  
+  if (contCelula[2][3] == 4) 
+    pegaTomate();
+  
+  if (contCelula[3][0] == 4)
+    caiBuraco();
+  
+  if (contCelula[3][2] == 4)
+    bateArvore();
+  
+  if (contCelula[4][0] == 4)
+    bateArvore();
+
+  if (contCelula[4][1] == 4)
+    furaPneu(celula[4][1]);
+  
+  if (contCelula[5][1] == 4)
+    pegaTomate();
+  
+  if (contCelula[5][3] == 4)
+    bateArvore();       
 }
 
 //-------------RFID---------------------
@@ -209,7 +263,7 @@ void zeraRFID() {
 }
 
 //Função de leitura de tag RFID
-void leituraRFID(){
+void leRFID(){
 
   //Desativa o som para evitar conflitos com o SPI
   tmrpcm.disable();
@@ -249,7 +303,7 @@ void leituraRFID(){
 }
 
 // Verifica a posição referente a leitura do RFID
-void comparaPosicao(){
+void descobrePosicao(){
   for (int i = 0; i < 6; i++) {
     for (int j = 0; j < 4; j++) {
       for (int k = 0; k < 4; k++) {
@@ -268,62 +322,6 @@ void comparaPosicao(){
         Serial.print(", linha ");
         Serial.print(j + 1);
         Serial.println(".");
-      }
-    }
-  }
-}
-
-// Identifica a posição atual e executa ação correspondente
-void executaInteracao() {
-  
-  if (contCelula[0][0] == 4)
-    fazendeiro();
-  
-  if (contCelula[1][0] == 4)
-    caiAgua();
-  
-  if (contCelula[1][2] == 4)
-    caiAgua();
-  
-  if (contCelula[1][3] == 4)
-    ponteFraca();
-  
-  if (contCelula[2][0] == 4)
-    bateArvore();
-  
-  if (contCelula[2][2] == 4)
-    bateArvore();
-  
-  if (contCelula[2][3] == 4) 
-    pegaTomate();
-  
-  if (contCelula[3][0] == 4)
-    caiBuraco();
-  
-  if (contCelula[3][2] == 4)
-    bateArvore();
-  
-  if (contCelula[4][0] == 4)
-    bateArvore();
-
-  if (contCelula[4][1] == 4)
-    furaPneu();
-  
-  if (contCelula[5][1] == 4)
-    pegaTomate();
-  
-  if (contCelula[5][3] == 4)
-    bateArvore();       
-  
-}
-
-// Verifica a posição referente a leitura anterior do RFID
-int verificaPosicaoAnterior(){
-  for (int i = 0; i < 6; i++) {
-    for (int j = 0; j < 4; j++) {
-      for (int k = 0; k < 4; k++) {
-        if(oldCard[k] == celula[i][j][k])
-          contCelulaAnterior[i][j]++;
       }
     }
   }
@@ -694,8 +692,9 @@ void programar() {
 }
 
 void executar(){
-  leituraRFID();
-  comparaPosicao();
+  leRFID();
+  descobrePosicao();
+  executaInteracao();
 
   while(contadorMemoria<posiMemoria) 
   {
@@ -735,8 +734,9 @@ void executar(){
       contadorMemoria++;
     }
     
-    leituraRFID(); 
-    
+    leRFID(); 
+    descobrePosicao();
+    executaInteracao();
   }
 }
 
