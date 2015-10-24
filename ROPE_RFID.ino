@@ -57,7 +57,7 @@ void somBotao() {
 }
 
 void somInicio() {
-    ligarLed();  
+//    ligarLed();  
     beep(som, b, 50);
     beep(som, f, 50); 
     beep(som, f, 50);
@@ -70,7 +70,7 @@ void beep (unsigned char som, int frequencyInHertz, long timeInMilliseconds) {
   while(tmrpcm.isPlaying()){
     
   }
-  ligarLed();  
+//  ligarLed();  
     int x;   
     long delayAmount = (long)(1000000/frequencyInHertz);
     long loopTime = (long)((timeInMilliseconds*1000)/(delayAmount*2));
@@ -80,114 +80,9 @@ void beep (unsigned char som, int frequencyInHertz, long timeInMilliseconds) {
         digitalWrite(som,LOW);
         delayMicroseconds(delayAmount);
     }    
-    desligarLed();
+//    desligarLed();
     delay(20);
     //Um dalay para separar as notas
-}
-
-//------------INTERAÇÕES----------------
-
-int tomate = 0;
-
-void bateArvore() {
-  tmrpcm.play("arvore.wav");
-  tremer();
-  limparVetor();
-}
-
-void caiBuraco(){
-  tmrpcm.play("buraco.wav");
-  girarEsquerda();
-  limparVetor();
-}
-
-void caiAgua(){
-  tmrpcm.play("agua.wav");
-  girarDireita();
-  limparVetor();
-}
-
-void ponteFraca(){
-  if(random(2)>=1){
-    tmrpcm.play("ponte.wav");
-    Serial.println("NÃO CAI!");
-    tremer();
-  } else {
-    tmrpcm.play("pontea.wav");
-    Serial.println("CAI!");
-    girarEsquerda();
-    limparVetor();
-  }
-}
-
-void pegaTomate(){
-  tmrpcm.play("tomate.wav");
-  tomate++;
-}
-
-void fazendeiro(){
-  if(tomate > 0){
-    tmrpcm.play("farmer2.wav");
-  } else {
-    tmrpcm.play("farmer1.wav");
-  }
-}
-
-void furaPneu(byte cel[4]){
-  if (comapraCelula(cel,celula[4][1]) {
-    if (comparaCelula(oldCard,celula[5][1]) {
-      limpaVetor();
-      tmrpcm.play("pneu.wav");
-    }
-  } else if (comapraCelula(cel,celula[5][1]) {
-    if (comparaCelula(oldCard,celula[4][1]) {
-      limpaVetor();
-      tmrpcm.play("pneu.wav");
-    }
-  }
-}
-
-// Identifica a posição atual e executa ação correspondente
-void executaInteracao() {
-  
-  if (contCelula[0][0] == 4)
-    fazendeiro();
-  
-  if (contCelula[1][0] == 4)
-    caiAgua();
-  
-  if (contCelula[1][2] == 4)
-    caiAgua();
-  
-  if (contCelula[1][3] == 4)
-    ponteFraca();
-  
-  if (contCelula[2][0] == 4)
-    bateArvore();
-  
-  if (contCelula[2][2] == 4)
-    bateArvore();
-  
-  if (contCelula[2][3] == 4) 
-    pegaTomate();
-  
-  if (contCelula[3][0] == 4)
-    caiBuraco();
-  
-  if (contCelula[3][2] == 4)
-    bateArvore();
-  
-  if (contCelula[4][0] == 4)
-    bateArvore();
-
-  if (contCelula[4][1] == 4)
-    furaPneu(celula[4][1]);
-  
-  if (contCelula[5][1] == 4)
-    pegaTomate();
-  
-  if (contCelula[5][3] == 4)
-    bateArvore();       
 }
 
 //-------------RFID---------------------
@@ -325,6 +220,7 @@ void descobrePosicao(){
       }
     }
   }
+  Serial.println("-----------------------------------");
 }
 
 boolean comparaCelula(byte celula1[4], byte celula2[4]){
@@ -338,6 +234,116 @@ boolean comparaCelula(byte celula1[4], byte celula2[4]){
   } else {
     return false;
   }
+}
+
+//------------INTERAÇÕES----------------
+
+boolean tomate = false;
+
+void bateArvore() {
+  tmrpcm.play("arvore.wav");
+  tremer();
+  limpaInstrucoes();
+}
+
+void caiBuraco(){
+  tmrpcm.play("buraco.wav");
+  tremer();
+  limpaInstrucoes();
+}
+
+void caiAgua(){
+  tmrpcm.play("agua.wav");
+  tremer();
+  limpaInstrucoes();
+}
+
+void ponteFraca(){
+  if(random(2)>=1){
+    tmrpcm.play("ponte.wav");
+    Serial.println("NÃO CAI!");
+    tremer();
+  } else {
+    tmrpcm.play("pontea.wav");
+    Serial.println("CAI!");
+    tremer();
+    limpaInstrucoes();
+  }
+  Serial.println("Saiu das instrucoes!");
+}
+
+void pegaTomate(byte cel[4]){
+  if (!tomate){
+    tmrpcm.play("tomate.wav");
+    tomate = true;
+  }
+  furaPneu(cel);
+}
+
+void fazendeiro(){
+  if(tomate){
+    tmrpcm.play("farmer2.wav");
+    tomate = false;
+  } else {
+    tmrpcm.play("farmer1.wav");
+  }
+}
+
+void furaPneu(byte cel[4]) {
+  if (comparaCelula(cel,celula[4][1])) {
+    if (comparaCelula(oldCard,celula[5][1])) {
+      limpaInstrucoes();
+      tmrpcm.play("pneu.wav");
+    }
+  } else if (comparaCelula(cel,celula[5][1])) {
+    if (comparaCelula(oldCard,celula[4][1])) {
+      limpaInstrucoes();
+      tmrpcm.play("pneu.wav");
+    }
+  }
+}
+
+// Identifica a posição atual e executa ação correspondente
+void executaInteracao() {
+  
+  if (contCelula[0][0] == 4)
+    fazendeiro();
+  
+  if (contCelula[1][0] == 4)
+    caiAgua();
+  
+  if (contCelula[1][2] == 4)
+    caiAgua();
+  
+  if (contCelula[1][3] == 4)
+    ponteFraca();
+  
+  if (contCelula[2][0] == 4)
+    bateArvore();
+  
+  if (contCelula[2][2] == 4)
+    bateArvore();
+  
+  if (contCelula[2][3] == 4) 
+    pegaTomate(celula[2][3]);
+  
+  if (contCelula[3][0] == 4)
+    caiBuraco();
+  
+  if (contCelula[3][2] == 4)
+    bateArvore();
+  
+  if (contCelula[4][0] == 4)
+    bateArvore();
+
+  if (contCelula[4][1] == 4)
+    furaPneu(celula[4][1]);
+  
+  if (contCelula[5][1] == 4)
+    pegaTomate(celula[5][1]);
+  
+  if (contCelula[5][3] == 4)
+    bateArvore();       
 }
 
 //-------------Botoes-------------------
@@ -384,18 +390,18 @@ boolean botaoGo(){
 }
 
 //-------------Leds--------------
-int led1 = 2;
-int led2 = 3;
-
-void ligarLed(){
-  digitalWrite(led1,HIGH);
-  digitalWrite(led2,LOW);
-}
-
-void desligarLed(){
-  digitalWrite(led1,LOW);
-  digitalWrite(led2,HIGH);
-}
+//int led1 = 2;
+//int led2 = 3;
+//
+//void ligarLed(){
+//  digitalWrite(led1,HIGH);
+//  digitalWrite(led2,LOW);
+//}
+//
+//void desligarLed(){
+//  digitalWrite(led1,LOW);
+//  digitalWrite(led2,HIGH);
+//}
 
 //-------------Motor----------
 #include <AccelStepper.h>
@@ -460,24 +466,6 @@ boolean moveresquerda() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
-  stepper1.moveTo(-girar);
-  stepper2.moveTo(-girar);
-
-  while (stepper1.currentPosition() != -girar) {
-    stepper1.run();
-    stepper2.run();
-  }
-
-  stepper1.setCurrentPosition(0);
-  stepper2.setCurrentPosition(0);
-
-  return false; 
-}
-
-boolean moverdireita() {
-  stepper1.setCurrentPosition(0);
-  stepper2.setCurrentPosition(0);
-
   stepper1.moveTo(girar);
   stepper2.moveTo(girar);
 
@@ -492,14 +480,14 @@ boolean moverdireita() {
   return false; 
 }
 
-boolean girarDireita() {
+boolean moverdireita() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
-  stepper1.moveTo(girar*4);
-  stepper2.moveTo(girar*4);
+  stepper1.moveTo(-girar);
+  stepper2.moveTo(-girar);
 
-  while (stepper1.currentPosition() != girar) {
+  while (stepper1.currentPosition() != -girar) {
     stepper1.run();
     stepper2.run();
   }
@@ -510,23 +498,41 @@ boolean girarDireita() {
   return false; 
 }
 
-boolean girarEsquerda() {
-  stepper1.setCurrentPosition(0);
-  stepper2.setCurrentPosition(0);
-
-  stepper1.moveTo(-girar*4);
-  stepper2.moveTo(-girar*4);
-
-  while (stepper1.currentPosition() != girar) {
-    stepper1.run();
-    stepper2.run();
-  }
-
-  stepper1.setCurrentPosition(0);
-  stepper2.setCurrentPosition(0);
-
-  return false; 
-}
+//boolean girarDireita() {
+//  stepper1.setCurrentPosition(0);
+//  stepper2.setCurrentPosition(0);
+//
+//  stepper1.moveTo(girar*4);
+//  stepper2.moveTo(girar*4);
+//
+//  while (stepper1.currentPosition() != girar) {
+//    stepper1.run();
+//    stepper2.run();
+//  }
+//
+//  stepper1.setCurrentPosition(0);
+//  stepper2.setCurrentPosition(0);
+//
+//  return false; 
+//}
+//
+//boolean girarEsquerda() {
+//  stepper1.setCurrentPosition(0);
+//  stepper2.setCurrentPosition(0);
+//
+//  stepper1.moveTo(-girar*4);
+//  stepper2.moveTo(-girar*4);
+//
+//  while (stepper1.currentPosition() != girar) {
+//    stepper1.run();
+//    stepper2.run();
+//  }
+//
+//  stepper1.setCurrentPosition(0);
+//  stepper2.setCurrentPosition(0);
+//
+//  return false; 
+//}
 
 boolean tremer() {
   
@@ -597,8 +603,8 @@ void setup() {
   pinMode(btdireita,INPUT);
   pinMode(btesquerda,INPUT);
   pinMode(btgo,INPUT);
-  pinMode(led1,OUTPUT);
-  pinMode(led2,OUTPUT);
+//  pinMode(led1,OUTPUT);
+//  pinMode(led2,OUTPUT);
   pinMode(som,OUTPUT);
 
   //digitalWrite(led2,HIGH);
@@ -625,7 +631,7 @@ void setup() {
   
   tmrpcm.setVolume(5);
 
-  tmrpcm.play("arvore.wav");
+  //tmrpcm.play("arvore.wav");
 
   randomSeed(analogRead(0));
 }
@@ -633,62 +639,71 @@ void setup() {
 void loop() {
   programar();
   executar();
-  limparVetor();
+  limpaInstrucoes();
 }
 
 
 void programar() {
   while(!botaoGo()) {
     if(botaoFrente()) {
-      Serial.println("Botao Frente!");
+//      Serial.println("Botao Frente!");
       somBotao();
       memoria[posiMemoria] = frente;
       posiMemoria++;
-      ligarLed();
+//      ligarLed();
       while(botaoFrente()){
         delay(10);
       }
-      desligarLed();
+//      desligarLed();
     }
      
     else if(botaotras()) {
-      Serial.println("Botao Tras!");
+//      Serial.println("Botao Tras!");
       somBotao();
       memoria[posiMemoria]=tras;
       posiMemoria++;
-      ligarLed();
+//      ligarLed();
       while(botaotras()) {
         delay(10);
       }
-      desligarLed();
+//      desligarLed();
     }
     
     else  if(botaoDireita()) {
-      Serial.println("Botao Direita!");      
+//      Serial.println("Botao Direita!");      
       somBotao();
       memoria[posiMemoria]=direita;
       posiMemoria++;
-      ligarLed();
+//      ligarLed();
       while(botaoDireita()) {
         delay(10);
       }
-      desligarLed();
-      //startPlayback(db, sizeof(alive));
+//      desligarLed();
     }
     
     else if(botaoEsquerda()) {
-      Serial.println("Botao Esquerda!");      
+//      Serial.println("Botao Esquerda!");      
       somBotao();
       memoria[posiMemoria]=esquerda;
       posiMemoria++;
-      ligarLed();
+//      ligarLed();
       while(botaoEsquerda()){
         delay(10);
       }
-      desligarLed();
+//      desligarLed();
     }
   }
-  Serial.println("Botão Go!");
+//  Serial.println("Botão Go!");
+}
+
+void printMemoria(){
+  Serial.println();
+  Serial.print("Vetor de Memoria: (");
+  for(int i = 0; i < 50; i++){
+    Serial.print(memoria[i]);
+    Serial.print(", ");
+  }
+  Serial.println(")");
 }
 
 void executar(){
@@ -702,45 +717,58 @@ void executar(){
     Serial.print("Execucao: ");
     Serial.println(contadorMemoria);
 
+//    printMemoria();
+
     if(memoria[contadorMemoria]==frente) {
-      ligarLed();
+//      Serial.println("Começou pra frente");
+//      ligarLed();
       somAndar();
       moverfrente();
-      desligarLed();
+//      desligarLed();
       contadorMemoria++;
+//      Serial.println("Terminou pra frente");
     }
     
     else if(memoria[contadorMemoria]==tras) {
-      ligarLed();
+      Serial.println("Começou pra tras");
+//      ligarLed();
       somAndar();
       movertras();
-      desligarLed();
+//      desligarLed();
       contadorMemoria++;
+      Serial.println("Terminou pra tras");
     }
     
     else if(memoria[contadorMemoria]==direita) {
-      ligarLed();
+//      Serial.println("Começou pra direita");
+//      ligarLed();
       somAndar();
       moverdireita();
-      desligarLed();
+//      desligarLed();
       contadorMemoria++;
+//      Serial.println("Terminou pra direita");
     }
     
     else if(memoria[contadorMemoria]==esquerda) {
-      ligarLed();
+//      Serial.println("Começou pra esquerda");
+//      ligarLed();
       somAndar();
       moveresquerda();
-      desligarLed();
+//      desligarLed();
       contadorMemoria++;
+//      Serial.println("Terminou pra esquerda");
     }
-    
+
+//    Serial.println("Vai ler RFID");
     leRFID(); 
+//    Serial.println("Vai descibrir posição");
     descobrePosicao();
+//    Serial.println("Vai executar interacao");
     executaInteracao();
   }
 }
 
-void limparVetor(){
+void limpaInstrucoes(){
   int i = 0;
   for(i = 0; i < 50; i++) {
     memoria[i] = 0;
