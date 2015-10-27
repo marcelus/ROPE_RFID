@@ -95,8 +95,8 @@ void beep (unsigned char som, int frequencyInHertz, long timeInMilliseconds) {
 #define RST_PIN         5           // Configurable, see typical pin layout above
 #define SS_PIN          53          // Configurable, see typical pin layout above
 
-byte readCard[4];                   // Armazenamento do cartão lido pelo RC522
-byte oldCard[4];                    // Armazenamento do cartão anterior
+byte posicaoAtual[4];                   // Armazenamento do cartão lido pelo RC522
+byte posicaoAnterior[4];                    // Armazenamento do cartão anterior
 int qntLeiturasRFID = 20;           // Quantidade de tentativas de leitura que o sensor tenta realizar
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
@@ -144,9 +144,9 @@ int contCelula[6][4];
 int contCelulaAnterior[6][4];
 
 // Função para zerar as variáveis utilizadas para identificação de posição
-void zeraRFID() {
+void zerarRFID() {
   for (int i = 0; i < 4; i++) {
-    readCard[i] = 0;
+    posicaoAtual[i] = 0;
   }
   
   for (int i = 0; i < 6; i++) {
@@ -158,31 +158,31 @@ void zeraRFID() {
 }
 
 //Função de leitura de tag RFID
-void leRFID(){
+void lerRFID(){
 
   //Desativa o som para evitar conflitos com o SPI
   tmrpcm.disable();
   
   //Armazena cartão antigo, se houver um
-  if (readCard[0]) {
+  if (posicaoAtual[0]) {
     Serial.println("");
     Serial.print("Cartao antigo: ");
     for (int i = 0; i < 4; i++) {
-      oldCard[i] = readCard[i];
-      Serial.print(oldCard[i], HEX);
+      posicaoAnterior[i] = posicaoAtual[i];
+      Serial.print(posicaoAnterior[i], HEX);
     }
     Serial.println("");
   }
 
   //Zera as variáveis para efetuar nova leitura e verificar posição
-  zeraRFID();
+  zerarRFID();
 
   //Faz a leitura e armazenamento de novo RFID
   for (int i = 0 ; i < qntLeiturasRFID ; i ++) {
     if (mfrc522.PICC_IsNewCardPresent()) {
-      if (mfrc522.PICC_ReadCardSerial()) {
+      if (mfrc522.PICC_posicaoAtualSerial()) {
         for (int i = 0; i < 4; i++) {
-          readCard[i] = mfrc522.uid.uidByte[i];
+          posicaoAtual[i] = mfrc522.uid.uidByte[i];
         }
       }      
     }
@@ -192,17 +192,17 @@ void leRFID(){
   Serial.println("");
   Serial.print("UID: ");
   for (int i = 0; i < 4; i++) {
-    Serial.print(readCard[i], HEX);
+    Serial.print(posicaoAtual[i], HEX);
   }
   Serial.println("");
 }
 
 // Verifica a posição referente a leitura do RFID
-void descobrePosicao(){
+void descobrirPosicao(){
   for (int i = 0; i < 6; i++) {
     for (int j = 0; j < 4; j++) {
       for (int k = 0; k < 4; k++) {
-        if(readCard[k] == celula[i][j][k])
+        if(posicaoAtual[k] == celula[i][j][k])
           contCelula[i][j]++;
       }
     }
@@ -223,7 +223,7 @@ void descobrePosicao(){
   Serial.println("-----------------------------------");
 }
 
-boolean comparaCelula(byte celula1[4], byte celula2[4]){
+boolean compararCelula(byte celula1[4], byte celula2[4]){
   int contIgualdade = 0;
   for (int i = 0; i < 4; i++){
     if (celula1[i] == celula2 [i])
@@ -240,25 +240,25 @@ boolean comparaCelula(byte celula1[4], byte celula2[4]){
 
 boolean tomate = false;
 
-void bateArvore() {
+void baterArvore() {
   tmrpcm.play("arvore.wav");
   tremer();
-  limpaInstrucoes();
+  limparInstrucoes();
 }
 
-void caiBuraco(){
+void cairBuraco(){
   tmrpcm.play("buraco.wav");
   tremer();
-  limpaInstrucoes();
+  limparInstrucoes();
 }
 
-void caiAgua(){
+void cairBuraco(){
   tmrpcm.play("agua.wav");
   tremer();
-  limpaInstrucoes();
+  limparInstrucoes();
 }
 
-void ponteFraca(){
+void atravessarPonteFraca(){
   if(random(2)>=1){
     tmrpcm.play("ponte.wav");
     Serial.println("NÃO CAI!");
@@ -267,20 +267,23 @@ void ponteFraca(){
     tmrpcm.play("pontea.wav");
     Serial.println("CAI!");
     tremer();
-    limpaInstrucoes();
+    limparInstrucoes();
   }
   Serial.println("Saiu das instrucoes!");
 }
 
-void pegaTomate(byte cel[4]){
+void pegarTomate(byte cel[4]){
   if (!tomate){
-    tmrpcm.play("tomate.wav");
-    tomate = true;
+    if (!furarPneu(cel)) { 
+      tmrpcm.play("tomate.wav");
+      tomate = true;
+    }
+  } else {
+    furarPneu(cel);
   }
-  furaPneu(cel);
 }
 
-void fazendeiro(){
+void interagirFazendeiro(){
   if(tomate){
     tmrpcm.play("farmer2.wav");
     tomate = false;
@@ -289,61 +292,64 @@ void fazendeiro(){
   }
 }
 
-void furaPneu(byte cel[4]) {
-  if (comparaCelula(cel,celula[4][1])) {
-    if (comparaCelula(oldCard,celula[5][1])) {
-      limpaInstrucoes();
+boolean furarPneu(byte cel[4]) {
+  if (compararCelula(cel,celula[4][1])) {
+    if (compararCelula(posicaoAnterior,celula[5][1])) {
+      limparInstrucoes();
       tmrpcm.play("pneu.wav");
+      return true;
     }
-  } else if (comparaCelula(cel,celula[5][1])) {
-    if (comparaCelula(oldCard,celula[4][1])) {
-      limpaInstrucoes();
+  } else if (compararCelula(cel,celula[5][1])) {
+    if (compararCelula(posicaoAnterior,celula[4][1])) {
+      limparInstrucoes();
       tmrpcm.play("pneu.wav");
+      return true;
     }
   }
+  return false;
 }
 
 // Identifica a posição atual e executa ação correspondente
-void executaInteracao() {
+void executarInteracao() {
   
   if (contCelula[0][0] == 4)
-    fazendeiro();
+    interagirFazendeiro();
   
   if (contCelula[1][0] == 4)
-    caiAgua();
+    cairBuraco();
   
   if (contCelula[1][2] == 4)
-    caiAgua();
+    cairBuraco();
   
   if (contCelula[1][3] == 4)
-    ponteFraca();
+    atravessarPonteFraca();
   
   if (contCelula[2][0] == 4)
-    bateArvore();
+    baterArvore();
   
   if (contCelula[2][2] == 4)
-    bateArvore();
+    baterArvore();
   
   if (contCelula[2][3] == 4) 
-    pegaTomate(celula[2][3]);
+    pegarTomate(celula[2][3]);
   
   if (contCelula[3][0] == 4)
-    caiBuraco();
+    cairBuraco();
   
   if (contCelula[3][2] == 4)
-    bateArvore();
+    baterArvore();
   
   if (contCelula[4][0] == 4)
-    bateArvore();
+    baterArvore();
 
   if (contCelula[4][1] == 4)
-    furaPneu(celula[4][1]);
+    furarPneu(celula[4][1]);
   
   if (contCelula[5][1] == 4)
-    pegaTomate(celula[5][1]);
+    pegarTomate(celula[5][1]);
   
   if (contCelula[5][3] == 4)
-    bateArvore();       
+    baterArvore();       
 }
 
 //-------------Botoes-------------------
@@ -361,7 +367,7 @@ boolean botaoFrente(){
     return false;
 }
 
-boolean botaotras(){
+boolean botaoTras(){
   if(analogRead(bttras) >= 500)
     return true;
   else
@@ -420,13 +426,13 @@ boolean botaoGo(){
 AccelStepper stepper1(HALFSTEP, motorPin1, motorPin2, motorPin3, motorPin4);
 AccelStepper stepper2(HALFSTEP, motorPin5, motorPin6, motorPin7, motorPin8);
 
-int const maxspeed = 600; 
+int const maxspeed = 800; 
 int const acceleration = 6000; 
 int const Vspeed = 200;
-int const girar = 1450; // numero de giros para o lado
-int const andar = 2650; // numero de passo para frente
+int const girar = 1530; // numero de giros para o lado
+int const andar = 2700; // numero de passo para frente
 
-boolean moverfrente() {
+boolean moverFrente() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
@@ -444,7 +450,7 @@ boolean moverfrente() {
   return false; 
 }
 
-boolean movertras() {
+boolean moverTras() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
@@ -462,7 +468,7 @@ boolean movertras() {
   return false; 
 }
 
-boolean moveresquerda() {
+boolean moverEsquerda() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
@@ -480,7 +486,7 @@ boolean moveresquerda() {
   return false; 
 }
 
-boolean moverdireita() {
+boolean moverDireita() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
@@ -497,42 +503,6 @@ boolean moverdireita() {
 
   return false; 
 }
-
-//boolean girarDireita() {
-//  stepper1.setCurrentPosition(0);
-//  stepper2.setCurrentPosition(0);
-//
-//  stepper1.moveTo(girar*4);
-//  stepper2.moveTo(girar*4);
-//
-//  while (stepper1.currentPosition() != girar) {
-//    stepper1.run();
-//    stepper2.run();
-//  }
-//
-//  stepper1.setCurrentPosition(0);
-//  stepper2.setCurrentPosition(0);
-//
-//  return false; 
-//}
-//
-//boolean girarEsquerda() {
-//  stepper1.setCurrentPosition(0);
-//  stepper2.setCurrentPosition(0);
-//
-//  stepper1.moveTo(-girar*4);
-//  stepper2.moveTo(-girar*4);
-//
-//  while (stepper1.currentPosition() != girar) {
-//    stepper1.run();
-//    stepper2.run();
-//  }
-//
-//  stepper1.setCurrentPosition(0);
-//  stepper2.setCurrentPosition(0);
-//
-//  return false; 
-//}
 
 boolean tremer() {
   
@@ -623,7 +593,7 @@ void setup() {
   Serial.println("IT'S ALIVE!");
 
   tmrpcm.speakerPin = 11; //11 on Mega, 9 on Uno, Nano, etc
- 
+  
   if (!SD.begin(SD_ChipSelectPin)) {  // see if the card is present and can be initialized:
     Serial.println("Problema no SD!");
     return;   // don't do anything more if not
@@ -639,14 +609,14 @@ void setup() {
 void loop() {
   programar();
   executar();
-  limpaInstrucoes();
+  limparInstrucoes();
 }
 
 
 void programar() {
   while(!botaoGo()) {
     if(botaoFrente()) {
-//      Serial.println("Botao Frente!");
+      Serial.println("Botao Frente!");
       somBotao();
       memoria[posiMemoria] = frente;
       posiMemoria++;
@@ -657,20 +627,20 @@ void programar() {
 //      desligarLed();
     }
      
-    else if(botaotras()) {
-//      Serial.println("Botao Tras!");
+    else if(botaoTras()) {
+      Serial.println("Botao Tras!");
       somBotao();
       memoria[posiMemoria]=tras;
       posiMemoria++;
 //      ligarLed();
-      while(botaotras()) {
+      while(botaoTras()) {
         delay(10);
       }
 //      desligarLed();
     }
     
     else  if(botaoDireita()) {
-//      Serial.println("Botao Direita!");      
+      Serial.println("Botao Direita!");      
       somBotao();
       memoria[posiMemoria]=direita;
       posiMemoria++;
@@ -682,7 +652,7 @@ void programar() {
     }
     
     else if(botaoEsquerda()) {
-//      Serial.println("Botao Esquerda!");      
+      Serial.println("Botao Esquerda!");      
       somBotao();
       memoria[posiMemoria]=esquerda;
       posiMemoria++;
@@ -693,7 +663,7 @@ void programar() {
 //      desligarLed();
     }
   }
-//  Serial.println("Botão Go!");
+  Serial.println("Botão Go!");
 }
 
 void printMemoria(){
@@ -707,9 +677,9 @@ void printMemoria(){
 }
 
 void executar(){
-  leRFID();
-  descobrePosicao();
-  executaInteracao();
+  lerRFID();
+  descobrirPosicao();
+  executarInteracao();
 
   while(contadorMemoria<posiMemoria) 
   {
@@ -717,58 +687,45 @@ void executar(){
     Serial.print("Execucao: ");
     Serial.println(contadorMemoria);
 
-//    printMemoria();
-
     if(memoria[contadorMemoria]==frente) {
-//      Serial.println("Começou pra frente");
 //      ligarLed();
       somAndar();
-      moverfrente();
+      moverFrente();
 //      desligarLed();
       contadorMemoria++;
-//      Serial.println("Terminou pra frente");
     }
     
     else if(memoria[contadorMemoria]==tras) {
-      Serial.println("Começou pra tras");
 //      ligarLed();
       somAndar();
-      movertras();
+      moverTras();
 //      desligarLed();
       contadorMemoria++;
-      Serial.println("Terminou pra tras");
     }
     
     else if(memoria[contadorMemoria]==direita) {
-//      Serial.println("Começou pra direita");
 //      ligarLed();
       somAndar();
-      moverdireita();
+      moverDireita();
 //      desligarLed();
       contadorMemoria++;
-//      Serial.println("Terminou pra direita");
     }
     
     else if(memoria[contadorMemoria]==esquerda) {
-//      Serial.println("Começou pra esquerda");
 //      ligarLed();
       somAndar();
-      moveresquerda();
+      moverEsquerda();
 //      desligarLed();
       contadorMemoria++;
-//      Serial.println("Terminou pra esquerda");
     }
 
-//    Serial.println("Vai ler RFID");
-    leRFID(); 
-//    Serial.println("Vai descibrir posição");
-    descobrePosicao();
-//    Serial.println("Vai executar interacao");
-    executaInteracao();
+    lerRFID(); 
+    descobrirPosicao();
+    executarInteracao();
   }
 }
 
-void limpaInstrucoes(){
+void limparInstrucoes(){
   int i = 0;
   for(i = 0; i < 50; i++) {
     memoria[i] = 0;
