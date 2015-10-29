@@ -180,7 +180,7 @@ void lerRFID(){
   //Faz a leitura e armazenamento de novo RFID
   for (int i = 0 ; i < qntLeiturasRFID ; i ++) {
     if (mfrc522.PICC_IsNewCardPresent()) {
-      if (mfrc522.PICC_posicaoAtualSerial()) {
+      if (mfrc522.PICC_ReadCardSerial()) {
         for (int i = 0; i < 4; i++) {
           posicaoAtual[i] = mfrc522.uid.uidByte[i];
         }
@@ -252,14 +252,14 @@ void cairBuraco(){
   limparInstrucoes();
 }
 
-void cairBuraco(){
+void cairAgua(){
   tmrpcm.play("agua.wav");
   tremer();
   limparInstrucoes();
 }
 
 void atravessarPonteFraca(){
-  if(random(2)>=1){
+  if(random(2)==1){
     tmrpcm.play("ponte.wav");
     Serial.println("NÃO CAI!");
     tremer();
@@ -269,37 +269,38 @@ void atravessarPonteFraca(){
     tremer();
     limparInstrucoes();
   }
-  Serial.println("Saiu das instrucoes!");
 }
 
-void pegarTomate(byte cel[4]){
+void pegarTomate(byte celulaAtual[4]){
   if (!tomate){
-    if (!furarPneu(cel)) { 
+    if (!furarPneu(celulaAtual)) {
       tmrpcm.play("tomate.wav");
       tomate = true;
     }
   } else {
-    furarPneu(cel);
+    furarPneu(celulaAtual);
   }
 }
 
 void interagirFazendeiro(){
-  if(tomate){
-    tmrpcm.play("farmer2.wav");
-    tomate = false;
-  } else {
-    tmrpcm.play("farmer1.wav");
+  if (!compararCelula(posicaoAtual,posicaoAnterior)){
+    if(tomate){
+      tmrpcm.play("farmer2.wav");
+      tomate = false;
+    } else {
+      tmrpcm.play("farmer1.wav");
+    }
   }
 }
 
-boolean furarPneu(byte cel[4]) {
-  if (compararCelula(cel,celula[4][1])) {
+boolean furarPneu(byte celulaAtual[4]) {
+  if (compararCelula(celulaAtual,celula[4][1])) {
     if (compararCelula(posicaoAnterior,celula[5][1])) {
       limparInstrucoes();
       tmrpcm.play("pneu.wav");
       return true;
     }
-  } else if (compararCelula(cel,celula[5][1])) {
+  } else if (compararCelula(celulaAtual,celula[5][1])) {
     if (compararCelula(posicaoAnterior,celula[4][1])) {
       limparInstrucoes();
       tmrpcm.play("pneu.wav");
@@ -312,44 +313,71 @@ boolean furarPneu(byte cel[4]) {
 // Identifica a posição atual e executa ação correspondente
 void executarInteracao() {
   
-  if (contCelula[0][0] == 4)
+  if (contCelula[0][0] == 4) {
     interagirFazendeiro();
+    return;
+  }
   
-  if (contCelula[1][0] == 4)
-    cairBuraco();
+  if (contCelula[1][0] == 4) {
+    cairAgua();
+    return;
+  }
   
-  if (contCelula[1][2] == 4)
-    cairBuraco();
+  if (contCelula[1][2] == 4) {
+    cairAgua();
+    return;
+  }
   
-  if (contCelula[1][3] == 4)
+  if (contCelula[1][3] == 4) {
     atravessarPonteFraca();
+    return;
+  }
   
-  if (contCelula[2][0] == 4)
+  if (contCelula[2][0] == 4) {
     baterArvore();
+    return;
+  }
   
-  if (contCelula[2][2] == 4)
+  if (contCelula[2][2] == 4) {
     baterArvore();
+    return;
+  }
   
-  if (contCelula[2][3] == 4) 
+  if (contCelula[2][3] == 4) {
     pegarTomate(celula[2][3]);
+    return;
+  }
   
-  if (contCelula[3][0] == 4)
+  if (contCelula[3][0] == 4) {
     cairBuraco();
+    return;
+  }
   
-  if (contCelula[3][2] == 4)
+  if (contCelula[3][2] == 4){
     baterArvore();
+    return;
+  }
   
-  if (contCelula[4][0] == 4)
+  if (contCelula[4][0] == 4) {
     baterArvore();
+    return;
+  }
 
-  if (contCelula[4][1] == 4)
+  if (contCelula[4][1] == 4) {
     furarPneu(celula[4][1]);
+    return;
+  }
   
-  if (contCelula[5][1] == 4)
+  if (contCelula[5][1] == 4) {
     pegarTomate(celula[5][1]);
+    return;
+  }
   
-  if (contCelula[5][3] == 4)
-    baterArvore();       
+  if (contCelula[5][3] == 4) {
+    baterArvore();
+    return;
+  }
+  
 }
 
 //-------------Botoes-------------------
@@ -426,20 +454,20 @@ boolean botaoGo(){
 AccelStepper stepper1(HALFSTEP, motorPin1, motorPin2, motorPin3, motorPin4);
 AccelStepper stepper2(HALFSTEP, motorPin5, motorPin6, motorPin7, motorPin8);
 
-int const maxspeed = 800; 
-int const acceleration = 6000; 
-int const Vspeed = 200;
-int const girar = 1530; // numero de giros para o lado
-int const andar = 2700; // numero de passo para frente
+int const velocidadeMaxima = 800; 
+int const aceleracao = 6000; 
+int const velocidadeConstante = 200;
+int const passosGiro = 1530; // numero de giros para o lado
+int const passosParaFrente = 2700; // numero de passo para frente
 
 boolean moverFrente() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
-  stepper1.moveTo(-andar);
-  stepper2.moveTo(andar);
+  stepper1.moveTo(-passosParaFrente);
+  stepper2.moveTo(passosParaFrente);
 
-  while (stepper1.currentPosition() != -andar) {
+  while (stepper1.currentPosition() != -passosParaFrente) {
     stepper1.run();
     stepper2.run();
   }
@@ -454,10 +482,10 @@ boolean moverTras() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
-  stepper1.moveTo(andar);
-  stepper2.moveTo(-andar);
+  stepper1.moveTo(passosParaFrente);
+  stepper2.moveTo(-passosParaFrente);
 
-  while (stepper1.currentPosition() != andar) {
+  while (stepper1.currentPosition() != passosParaFrente) {
     stepper1.run();
     stepper2.run();
   }
@@ -472,10 +500,10 @@ boolean moverEsquerda() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
-  stepper1.moveTo(girar);
-  stepper2.moveTo(girar);
+  stepper1.moveTo(passosGiro);
+  stepper2.moveTo(passosGiro);
 
-  while (stepper1.currentPosition() != girar) {
+  while (stepper1.currentPosition() != passosGiro) {
     stepper1.run();
     stepper2.run();
   }
@@ -490,10 +518,10 @@ boolean moverDireita() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
-  stepper1.moveTo(-girar);
-  stepper2.moveTo(-girar);
+  stepper1.moveTo(-passosGiro);
+  stepper2.moveTo(-passosGiro);
 
-  while (stepper1.currentPosition() != -girar) {
+  while (stepper1.currentPosition() != -passosGiro) {
     stepper1.run();
     stepper2.run();
   }
@@ -510,10 +538,10 @@ boolean tremer() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
-  stepper1.moveTo(girar/8);
-  stepper2.moveTo(girar/8);
+  stepper1.moveTo(passosGiro/8);
+  stepper2.moveTo(passosGiro/8);
 
-  while (stepper1.currentPosition() != girar/8) {
+  while (stepper1.currentPosition() != passosGiro/8) {
     stepper1.run();
     stepper2.run();
   }
@@ -524,10 +552,10 @@ boolean tremer() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
-  stepper1.moveTo(-girar/4);
-  stepper2.moveTo(-girar/4);
+  stepper1.moveTo(-passosGiro/4);
+  stepper2.moveTo(-passosGiro/4);
 
-  while (stepper1.currentPosition() != -girar/4) {
+  while (stepper1.currentPosition() != -passosGiro/4) {
     stepper1.run();
     stepper2.run();
   }
@@ -538,10 +566,10 @@ boolean tremer() {
   stepper1.setCurrentPosition(0);
   stepper2.setCurrentPosition(0);
 
-  stepper1.moveTo(girar/8);
-  stepper2.moveTo(girar/8);
+  stepper1.moveTo(passosGiro/8);
+  stepper2.moveTo(passosGiro/8);
 
-  while (stepper1.currentPosition() != girar/8) {
+  while (stepper1.currentPosition() != passosGiro/8) {
     stepper1.run();
     stepper2.run();
   }
@@ -553,9 +581,6 @@ boolean tremer() {
 }
 
 //-------------//Geral//-----------------
-int estado;
-int programando = 1;
-int executando = 2;
 int frente = 10;
 int tras = 20;
 int direita = 30;
@@ -579,12 +604,12 @@ void setup() {
 
   //digitalWrite(led2,HIGH);
 
-  stepper1.setMaxSpeed(maxspeed);
-  stepper1.setAcceleration(acceleration);
-  stepper1.setSpeed(Vspeed);
-  stepper2.setMaxSpeed(maxspeed);
-  stepper2.setAcceleration(acceleration);
-  stepper2.setSpeed(Vspeed);
+  stepper1.setMaxSpeed(velocidadeMaxima);
+  stepper1.setAcceleration(aceleracao);
+  stepper1.setSpeed(velocidadeConstante);
+  stepper2.setMaxSpeed(velocidadeMaxima);
+  stepper2.setAcceleration(aceleracao);
+  stepper2.setSpeed(velocidadeConstante);
 
   SPI.begin(); //Init SPI bus
   mfrc522.PCD_Init(); //Init MFRC522 card
