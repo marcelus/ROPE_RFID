@@ -456,7 +456,6 @@ AccelStepper stepper2(HALFSTEP, motorPin5, motorPin6, motorPin7, motorPin8);
 
 int const velocidadeMaxima = 800; 
 int const aceleracao = 6000; 
-int const velocidadeConstante = 200;
 int const passosGiro = 1530; // numero de giros para o lado
 int const passosParaFrente = 2700; // numero de passo para frente
 
@@ -606,10 +605,8 @@ void setup() {
 
   stepper1.setMaxSpeed(velocidadeMaxima);
   stepper1.setAcceleration(aceleracao);
-  stepper1.setSpeed(velocidadeConstante);
   stepper2.setMaxSpeed(velocidadeMaxima);
   stepper2.setAcceleration(aceleracao);
-  stepper2.setSpeed(velocidadeConstante);
 
   SPI.begin(); //Init SPI bus
   mfrc522.PCD_Init(); //Init MFRC522 card
